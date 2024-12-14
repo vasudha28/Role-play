@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Interface</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #4f4848;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #logo {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        #menu {
+            font-size: 1em;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 50px);
+        }
+
+        .left-container {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid #ddd;
+        }
+        .left-container img {
+            margin-top: 10px;
+            transition: transform 0.3s;
+            width: 50px;
+            height: 50px;
+        }
+
+        .left-container img:hover {
+            transform: scale(1.1);
+        }
+
+
+        #bot-response {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e0f7fa;
+            border-radius: 5px;
+            width: 80%;
+            text-align: center;
+        }
+
+        .right-container {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #video-container {
+            width: 700px;
+            height: 500px;
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #record-btn {
+            position: absolute;
+            bottom: 10px;
+            padding: 10px 20px;
+            background: #0288d1;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+        }
+
+        #user-response {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e0f7fa;
+            border-radius: 5px;
+            width: 80%;
+            text-align: center;
+        }
+
+        #message {
+            flex: 1;
+            padding: 10px;
+            margin-right: 10px;
+        }
+
+        #send-btn, #mic-btn {
+            padding: 10px 20px;
+            background: #0288d1;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+
+        #send-btn:hover, #mic-btn:hover, #record-btn:hover {
+            background: #026aa7;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav>
+        <div id="logo">Logo</div>
+        <div id="menu">Menu</div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Left Container -->
+        <div class="left-container">
+            <img src="static/images/avatar.png" alt="Avatar" style="width: 300px; height: 300px; border-radius: 50%;">
+            <img src="static/images/speaking.png" alt="Speaking Emoji" style="width: 50px;">
+            <div id="bot-response"></div>
+            <br>
+            <br>
+            <br>
+            <button id="End-test" >END TEST</button>
+        </div>
+
+        <!-- Right Container -->
+        <div class="right-container">
+            <!-- Top Section: Video Recording -->
+            <div id="video-container">
+                <video id="video" width="100%" height="100%" autoplay muted></video>
+                <button id="record-btn">Record</button>
+            </div>
+
+            <!-- Bottom Section: Chat Container -->
+            <div id="chat-container">
+                <div id="user-response"></div>
+                <div style="margin-top: 10px; display: flex; align-items: center;">
+                    <textarea id="message" placeholder="Type your message here..."></textarea>
+                    <button id="send-btn">Send</button>
+                    <button id="mic-btn">
+                        <img src="static/images/mic.png" alt="Mic" style="width: 20px; height: 20px;">
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const botResponseContainer = document.getElementById('bot-response');
+        const userResponseContainer = document.getElementById('user-response');
+        const messageInput = document.getElementById('message');
+        const sendButton = document.getElementById('send-btn');
+        const micButton = document.getElementById('mic-btn');
+        const recordButton = document.getElementById('record-btn');
+        const videoElement = document.getElementById('video');
+
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        // Start the camera
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then((stream) => {
+                videoElement.srcObject = stream;
+
+                recordButton.addEventListener('click', () => {
+                    if (recordButton.textContent === 'Record') {
+                        startRecording(stream);
+                        recordButton.textContent = 'Stop';
+                    } else {
+                        stopRecording();
+                        recordButton.textContent = 'Record';
+                    }
+                });
+            })
+            .catch((error) => {
+                console.error('Error accessing camera:', error);
+            });
+
+            function startRecording(stream) {
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+
+                // Download the recorded video
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'recording.webm';
+                document.body.appendChild(a);
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            mediaRecorder.start();
+        }
+
+        function stopRecording() {
+            if (mediaRecorder) {
+                mediaRecorder.stop();
+            }
+        }
+
+        const synth = window.speechSynthesis;
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-IN';
+        recognition.continuous = true;
+
+        micButton.addEventListener('click', () => {
+            if (micButton.textContent === '🎤') {
+                recognition.start();
+                micButton.textContent = '🔴'; // Indicate mic is active
+            } else {
+                recognition.stop();
+                micButton.textContent = '🎤'; // Indicate mic is off
+            }
+        });
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[event.results.length - 1][0].transcript;
+            messageInput.value = transcript;
+            // Automatically send the transcribed message
+            handleTranscribedMessage(transcript);
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+        };
+
+        recognition.onend = () => {
+            console.log('Speech recognition ended');
+        };
+        // Send Message
+        // Handle Transcribed Message
+        async function handleTranscribedMessage(transcript) {
+            const userMessage = transcript;
+            if (!userMessage.trim()) return;
+
+            // Show user message temporarily
+            const tempMessage = document.createElement('div');
+            tempMessage.style.cssText = 'text-align: right; background: #f1f8e9; margin: 5px; padding: 10px; border-radius: 5px;';
+            tempMessage.textContent = userMessage;
+            userResponseContainer.appendChild(tempMessage);
+
+            try {
+                const response = await fetch('/api', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: userMessage }),
+                });
+
+                const data = await response.json();
+                botResponseContainer.innerHTML = data.response;
+
+                // Remove the temporary user message after sending
+                userResponseContainer.innerHTML = '';
+
+                // Text-to-Speech
+                const utterance = new SpeechSynthesisUtterance(data.response);
+                synth.speak(utterance);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+
+            messageInput.value = '';
+        };
+     // Trigger End Session API
+     document.getElementById('End-test').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/end_session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+                if (data.error) {
+                    console.error("Error ending session:", data.error);
+                    alert("Failed to end session: " + data.error);
+                    return;
+                }
+
+                // Redirect to summary page with summary text as a query parameter
+                window.location.href = `/summary?text=${encodeURIComponent(data.summary)}`;
+            } catch (error) {
+                console.error("Failed to end session:", error);
+            }
+        });  
+
+    </script>
+</body>
+</html>

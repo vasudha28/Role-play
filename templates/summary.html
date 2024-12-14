@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation Summary</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #summary-container {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Conversation Summary</h1>
+    <div id="summary-container"></div>
+    <div id="session-details">
+        <h2>Session Details</h2>
+        <p><strong>Session ID:</strong>{{ session_id}}</p>
+        <h3>Session Data:</h3>
+        <pre>{{ session_data | tojson(indent=2) }}</pre> 
+    </div>
+    <script>
+        // Fetch and display the summary from the query parameter
+        const params = new URLSearchParams(window.location.search);
+        const summaryText = params.get('text');
+        document.getElementById('summary-container').textContent = summaryText || "No summary available.";
+    </script>
+</body>
+</html>
